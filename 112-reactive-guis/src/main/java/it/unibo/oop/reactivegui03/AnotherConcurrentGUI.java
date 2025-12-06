@@ -24,6 +24,11 @@ public final class AnotherConcurrentGUI extends JFrame {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnotherConcurrentGUI.class);
 
     private final JLabel display = new JLabel();
+    private final JButton up = new JButton("up");
+    private final JButton down = new JButton("down");
+    private final JButton stop = new JButton("stop");
+
+    private final transient Agent counterAgent = new Agent();
 
     /**
      * Builds a new GUI.
@@ -33,27 +38,25 @@ public final class AnotherConcurrentGUI extends JFrame {
         JFrameUtil.dimensionJFrame(this);
         final JPanel pane = new JPanel();
         pane.add(this.display);
-        final JButton up = new JButton("up");
-        final JButton down = new JButton("down");
-        final JButton stop = new JButton("stop");
         pane.add(up);
         pane.add(down);
         pane.add(stop);
         this.setContentPane(pane);
         this.setVisible(true);
 
-        final Agent counterAgent = new Agent();
         new Thread(counterAgent).start();
 
         // Handlers
         up.addActionListener(a -> counterAgent.countUp());
         down.addActionListener(a -> counterAgent.countDown());
-        stop.addActionListener(a -> {
-            counterAgent.stopCounting();
-            up.setEnabled(false);
-            down.setEnabled(false);
-            stop.setEnabled(false);
-        });
+        stop.addActionListener(a -> this.stopCountingAgent());
+    }
+
+    private void stopCountingAgent() {
+        counterAgent.stopCounting();
+        up.setEnabled(false);
+        down.setEnabled(false);
+        stop.setEnabled(false);
     }
 
     private final class Agent implements Runnable {
@@ -64,6 +67,7 @@ public final class AnotherConcurrentGUI extends JFrame {
 
         @Override
         public void run() {
+            new Thread(new StopAgent()).start();
             while (!this.stopped) {
                 try {
                     final String nextText = String.valueOf(count);
@@ -74,7 +78,7 @@ public final class AnotherConcurrentGUI extends JFrame {
                         count--;
                     }
                     Thread.sleep(100);
-                } catch (InvocationTargetException | InterruptedException e) {
+                } catch (final InvocationTargetException | InterruptedException e) {
                     LOGGER.error(e.getMessage(), e);
                 }
             }
@@ -91,5 +95,21 @@ public final class AnotherConcurrentGUI extends JFrame {
         public void countDown() {
             this.up = false;
         }
+    }
+
+    private final class StopAgent implements Runnable {
+
+        private static final long STOP_TIME = 10_000;
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(STOP_TIME);
+                AnotherConcurrentGUI.this.stopCountingAgent();
+            } catch (final InterruptedException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+
     }
 }
