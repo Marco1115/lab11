@@ -4,6 +4,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,7 @@ import it.unibo.oop.JFrameUtil;
 import org.slf4j.Logger;
 
 import java.io.Serial;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Second example of reactive GUI.
@@ -39,5 +41,43 @@ public final class ConcurrentGUI extends JFrame {
         pane.add(stop);
         this.setContentPane(pane);
         this.setVisible(true);
+    }
+
+    private final class Agent implements Runnable {
+
+        private volatile boolean stopped;
+        private volatile boolean up = true;
+        private int count;
+
+        @Override
+        public void run() {
+            while (!this.stopped) {
+                try {
+                    final String nextText = String.valueOf(count);
+                    SwingUtilities.invokeAndWait(() -> ConcurrentGUI.this.display.setText(nextText));
+                    if (this.up) {
+                        count++;
+                    } else {
+                        count--;
+                    }
+                    Thread.sleep(100);
+                } catch (InvocationTargetException | InterruptedException e) {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+            SwingUtilities.invokeLater(() -> ConcurrentGUI.this.setEnabled(false));
+        }
+
+        public void stopCounting() {
+            this.stopped = true;
+        }
+
+        public void countUp() {
+            this.up = true;
+        }
+
+        public void countDown() {
+            this.up = false;
+        }
     }
 }
