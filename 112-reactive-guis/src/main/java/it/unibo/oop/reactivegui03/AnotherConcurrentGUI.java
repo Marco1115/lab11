@@ -54,9 +54,11 @@ public final class AnotherConcurrentGUI extends JFrame {
 
     private void stopCountingAgent() {
         counterAgent.stopCounting();
-        up.setEnabled(false);
-        down.setEnabled(false);
-        stop.setEnabled(false);
+        SwingUtilities.invokeLater(() -> {
+            this.up.setEnabled(false);
+            this.down.setEnabled(false);
+            this.stop.setEnabled(false);
+        });
     }
 
     private final class Agent implements Runnable {
