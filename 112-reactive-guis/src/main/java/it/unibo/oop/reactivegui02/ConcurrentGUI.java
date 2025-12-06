@@ -25,9 +25,6 @@ public final class ConcurrentGUI extends JFrame {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentGUI.class);
 
     private final JLabel display = new JLabel();
-    private final JButton up = new JButton("up");
-    private final JButton down = new JButton("down");
-    private final JButton stop = new JButton("stop");
 
     /**
      * Builds a new GUI.
@@ -37,6 +34,9 @@ public final class ConcurrentGUI extends JFrame {
         JFrameUtil.dimensionJFrame(this);
         final JPanel pane = new JPanel();
         pane.add(this.display);
+        final JButton up = new JButton("up");
+        final JButton down = new JButton("down");
+        final JButton stop = new JButton("stop");
         pane.add(up);
         pane.add(down);
         pane.add(stop);
@@ -49,7 +49,12 @@ public final class ConcurrentGUI extends JFrame {
         // Handlers
         up.addActionListener(a -> counterAgent.countUp());
         down.addActionListener(a -> counterAgent.countDown());
-        stop.addActionListener(a -> counterAgent.stopCounting());
+        stop.addActionListener(a -> {
+            counterAgent.stopCounting();
+            up.setEnabled(false);
+            down.setEnabled(false);
+            stop.setEnabled(false);
+        });
     }
 
     private final class Agent implements Runnable {
@@ -74,9 +79,6 @@ public final class ConcurrentGUI extends JFrame {
                     LOGGER.error(e.getMessage(), e);
                 }
             }
-            SwingUtilities.invokeLater(() -> ConcurrentGUI.this.up.setEnabled(false));
-            SwingUtilities.invokeLater(() -> ConcurrentGUI.this.down.setEnabled(false));
-            SwingUtilities.invokeLater(() -> ConcurrentGUI.this.stop.setEnabled(false));
         }
 
         public void stopCounting() {
