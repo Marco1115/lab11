@@ -1,5 +1,8 @@
 package it.unibo.oop.workers02;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Multithreaded implementation of the {@link SumMatrix} interface.
  */
@@ -16,8 +19,39 @@ public final class MultiThreadedSumMatrix implements SumMatrix {
 
     @Override
     public double sum(final double[][] matrix) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'sum'");
+        final int rows = matrix.length;
+        final int size = rows % nthread + rows / nthread;
+        /*
+         * Build a list of workers
+         */
+        final List<Worker> workers = new ArrayList<>(nthread);
+        for (int start = 0; start < rows; start += size) {
+            workers.add(new Worker(matrix, start, size));
+        }
+        /*
+         * Start them
+         */
+        for (final Worker w: workers) {
+            w.start();
+        }
+        /*
+         * Wait for every one of them to finish. This operation is _way_ better done by
+         * using barriers and latches, and the whole operation would be better done with
+         * futures.
+         */
+        double sum = 0;
+        for (final Worker w: workers) {
+            try {
+                w.join();
+                sum += w.getResult();
+            } catch (final InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        /*
+         * Return the sum
+         */
+        return sum;
     }
 
     private static final class Worker extends Thread {
@@ -25,7 +59,7 @@ public final class MultiThreadedSumMatrix implements SumMatrix {
         private final double[][] matrix;
         private final int startpos;
         private final int nelem;
-        private long res;
+        private double res;
 
         /**
          * Build a new worker.
@@ -61,7 +95,7 @@ public final class MultiThreadedSumMatrix implements SumMatrix {
          *
          * @return the sum of every element in the matrix
          */
-        public synchronized long getResult() {
+        public synchronized double getResult() {
             return this.res;
         }
 
